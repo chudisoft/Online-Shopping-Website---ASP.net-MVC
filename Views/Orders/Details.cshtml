@@ -1,0 +1,77 @@
+﻿@model Online_Shopping_Website.Models.Order
+
+@{
+    ViewBag.Title = "Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h3>Order Details</h3>
+
+<div>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Customer)
+        </dt>
+
+        <dd>
+            @Model.Customer.UserName | @Model.Customer.Email | @Model.Customer.PhoneNumber
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.Status)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.Status)
+        </dd>
+
+        <dt>
+            @Html.DisplayNameFor(model => model.OrderDate)
+        </dt>
+
+        <dd>
+            @Html.DisplayFor(model => model.OrderDate)
+        </dd>
+
+    </dl>
+</div>
+
+<div class="row">
+    @foreach (var item in Model.History)
+    {
+        <div class="col-md-3 table-bordered" style="margin: 5px">
+            <div class="form-group h3">
+                @Html.DisplayFor(modelItem => item.Product.Name)
+                @*<button class="btn btn-sm btn-primary"
+                            style="color: #ffffff; float: right"
+                            onclick="AddToCart(@item.Id, this)">
+                        <i class="fa fa-plus glyphicon-plus"></i>
+                    </button>*@
+            </div>
+            <div class="form-group">
+                <img src="@item.Product.FilePath.Substring(item.Product.FilePath.IndexOf("~") + 1)"
+                     class="img-rounded img-thumbnail" style="max-width: 100%" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Price:</label>
+                @Html.DisplayFor(modelItem => item.Price)
+            </div>
+            <div class="form-group">
+                <label class="control-label">Qty:</label>
+                @Html.DisplayFor(modelItem => item.Quantity)
+            </div>
+        </div>
+    }
+
+</div>
+
+<p>
+    @{
+        if (User.IsInRole("Admin"))
+        {
+            @Html.ActionLink("Edit", "Edit", new { id = Model.Id });
+        }
+    }
+    @Html.ActionLink("Back to List", "Index")
+</p>

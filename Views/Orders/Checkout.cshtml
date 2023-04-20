@@ -1,0 +1,480 @@
+﻿@model Online_Shopping_Website.Models.Order
+
+@{
+    ViewBag.Title = "Checkout";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h3>Order Checkout</h3>
+
+
+    @Html.AntiForgeryToken()
+
+    <p>Below are the list of products in cart.</p>
+    <div class="row">
+        <hr />
+        @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+
+        @{ int i = 0;}
+        @foreach (Online_Shopping_Website.Models.OrderHistory item in ViewBag.cartItems)
+        {
+            <div class="col-md-3 table-bordered" style="margin: 5px">
+                <div class="form-group h3">
+                    @Html.DisplayFor(modelItem => item.Product.Name)
+                    @*<button class="btn btn-sm btn-primary"
+                                style="color: #ffffff; float: right"
+                                onclick="AddToCart(@item.Id, this)">
+                            <i class="fa fa-plus glyphicon-plus"></i>
+                        </button>*@
+                </div>
+                <div class="form-group">
+                    <img src="@item.Product.FilePath.Substring(item.Product.FilePath.IndexOf("~") + 1)"
+                         class="img-rounded img-thumbnail" style="max-width: 100%" />
+                </div>
+                <div class="form-group" hidden>
+                    <label class="control-label">Category:</label>
+                    @Html.DisplayFor(modelItem => item.Product.Category.Name)
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Qty Available:</label>
+                    @Html.DisplayFor(modelItem => item.Quantity)
+                </div>
+                <div class="form-group text-center">
+                    <div>
+                        <label class="control-label">Qty:</label>
+                    </div>
+                    <button class="btn btn-sm btn-primary"
+                            style="color: #ffffff;"
+                            onclick="SubtractQty(@i, this)">
+                        <i class="fa fa-minus glyphicon-minus"></i>
+                    </button>
+                    @{
+                        //int qty = 0;
+                        //var order = (Online_Shopping_Website.Models.Order)ViewBag.order;
+                        //if (order.History.Count() > 0)
+                        //{
+                        //    var h = order.History.FirstOrDefault(x => x.ProductId == item.Id);
+                        //    if (h != null)
+                        //    {
+                        //        qty = h.Quantity;
+                        //    }
+                        //}
+                    }
+                    <input type="number" value="@item.Quantity" class="form-control-sm"
+                           id="Qty @i" d-val="@item.Id"
+                           onchange="CheckQty(@i, this, @item.Quantity)" />
+                    <button class="btn btn-sm btn-primary"
+                            style="color: #ffffff;"
+                            onclick="AddQty(@i, this, @item.Quantity)">
+                        <i class="fa fa-plus glyphicon-plus"></i>
+                    </button>
+                </div>
+            </div>
+            i = i + 1;
+        }
+    </div>
+    <hr />
+    <div class="panel col-md-4">
+        <h4 class="page-header">Credit Card Details</h4>
+        <div class="form-group">
+            <label>Card Type:</label>
+            <select class="form-control" id="cardType">
+                <option selected>MasterCard</option>
+                <option>Visa</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Card Number:</label>
+            <input type="number" id="number" placeholder="1234 5678 9012 3456"
+                   class="form-control" />
+        </div>
+        <div class="form-group">
+            <label>CardHolder Name:</label>
+            <input type="text" id="name" placeholder="Card Holder Name"
+                   class="form-control" />
+        </div>
+        <div class="form-group">
+            <input type="month" id="expiry" min="01" max="12" placeholder="MM/YYYY"
+                   class="form-control-sm" />
+            <input type="number" id="cvv" placeholder="CVV"
+                   class="form-control-sm" />
+        </div>
+        <div class="form-group">
+            <button class="btn btn-primary"
+                    style="color: #ffffff;"
+                    onclick="AddToCart(this)">
+                <i class="fas fa-cart-shopping"></i> Pay & Proceed
+            </button>
+        </div>
+
+    </div>
+    <div class="row"></div>
+
+
+        <div>
+            @Html.ActionLink("Back to Orders", "Index")
+        </div>
+
+        @section Scripts {
+            @Scripts.Render("~/bundles/jqueryval")
+
+<script>
+        var itemCount = @ViewBag.cartItemsCount;
+
+        function AddQty(id, btn, qty_av) {
+            var el = document.getElementById("Qty " + id);
+            if (Number(el.value) + 1 <= qty_av)
+                el.value = Number(el.value) + 1;
+        }
+        function CheckQty(id, btn, qty_av) {
+            var el = document.getElementById("Qty " + id);
+            if (Number(el.value) > qty_av)
+                el.value = Number(qty_av);
+        }
+        function SubtractQty(id, btn) {
+            var el = document.getElementById("Qty " + id);
+            if (Number(el.value) - 1 >= 0)
+                el.value = Number(el.value) - 1;
+        }
+        function AddToCart(e) {
+            //fetch()
+            console.log(itemCount)
+            console.log(e.children[0])
+            console.log(e.children[0].className)
+
+            if (e.className === "btn btn-sm btn-primary") {
+                e.className = "btn btn-sm btn-warning";
+            } else {
+                e.className = "btn btn-sm btn-primary";
+            }
+
+            //async () => {
+            //try {
+                var cItems = [];
+                for (var i = 0; i < itemCount; i++) {
+                    var el = document.getElementById("Qty " + i);
+                    console.log(el)
+                    if (Number(el.value) > 0)
+                        cItems.push({
+                            "id": el.getAttribute("d-val"),
+                            "qty": Number(el.value)
+                        });
+
+            }
+            var cName = document.getElementById('name');
+            var cExpiry = document.getElementById('expiry');
+            var cNumber = document.getElementById('number');
+            var cCVV = document.getElementById('cvv');
+            var myCardType = document.getElementById('cardType');
+
+            if (cName.value === "" || cCVV.value === "" || cNumber.value === "" || cExpiry.value === "") {
+                alert("All card values are required!");
+                return;
+            }
+
+            if (checkCreditCard(cNumber.value, myCardType.value)) {
+                //alert("Credit card has a valid format")
+            } else {
+                alert(ccErrors[ccErrorNo])
+                return;
+            };
+
+            var body = {
+                'card': {
+                    'name': cName.value,
+                    'expiry': cExpiry.value,
+                    'number': cNumber.value,
+                    'cvv': Number(cCVV.value)
+                }, 'cartitems': cItems
+                }
+                console.log(body);
+                //console.log(JSON.stringify(body));
+
+
+                fetch("@Url.Action("Create")", {
+                    method: "post",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                }).then((response) => {
+                    if (response.redirected === true) {
+                        alert("Unautorized");
+                        window.location.href = "/Account/Login";
+                        return;
+                    }
+                    console.log(response);
+                    response.json().then((result) => {
+                        if (response.status >= 400 && response.status < 500) {
+                            console.log(result)
+                            if (response.status === 401 || response.status === 403) {
+                                sessionStorage.setItem("redirectUrl", window.location.href);
+                                window.location.href = "/Account/Login";
+                                return;
+                            }
+                            return result;
+                        } else if (response.status >= 200 && response.status < 400) {
+                            if (result['status'] === "unauthorized") {
+                                alert(result['status']);
+                                window.location.href = "/Account/Login";
+                            } else if (result['status'] === "success") {
+                                window.location.href = "/Orders";
+                            } else {
+                                alert(result['status']);
+                            }
+                        } else {
+                            return {
+                                "error": 'Invalid Request: ' + response.statusText,
+                                "code": response.status,
+                                "status": response.statusText
+                            };
+                        }
+                    })
+                }).catch((error) => {
+                    var errM = error.toString().replace("TypeError: ", "")
+                    alert("Error: " + errM);
+                    return {
+                        "error": errM,
+                        "code": 0,
+                        "status": errM
+                    };
+                })
+
+                return;
+
+                $.ajax({
+                    url: "@Url.Action("Create")",
+                    type: "POST",
+                    data: JSON.stringify(body),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    error: function (response) {
+                        alert("Error: " + response.responseText);
+                },
+                    success: function (response) {
+                        alert(response);
+                    }
+                });
+            //}
+        }
+
+
+                var ccErrorNo = 0;
+                var ccErrors = new Array()
+
+                ccErrors[0] = "Unknown card type";
+                ccErrors[1] = "No card number provided";
+                ccErrors[2] = "Credit card number is in invalid format";
+                ccErrors[3] = "Credit card number is invalid";
+                ccErrors[4] = "Credit card number has an inappropriate number of digits";
+                ccErrors[5] = "Warning! This credit card number is associated with a scam attempt";
+
+                function checkCreditCard(cardnumber, cardname) {
+
+                    // Array to hold the permitted card characteristics
+                    var cards = new Array();
+
+                    // Define the cards we support. You may add addtional card types as follows.
+
+                    //  Name:         As in the selection box of the form - must be same as user's
+                    //  Length:       List of possible valid lengths of the card number for the card
+                    //  prefixes:     List of possible prefixes for the card
+                    //  checkdigit:   Boolean to say whether there is a check digit
+
+                    cards[0] = {
+                        name: "Visa",
+                        length: "13,16",
+                        prefixes: "4",
+                        checkdigit: true
+                    };
+                    cards[1] = {
+                        name: "MasterCard",
+                        length: "16",
+                        prefixes: "51,52,53,54,55",
+                        checkdigit: true
+                    };
+                    cards[2] = {
+                        name: "DinersClub",
+                        length: "14,16",
+                        prefixes: "36,38,54,55",
+                        checkdigit: true
+                    };
+                    cards[3] = {
+                        name: "CarteBlanche",
+                        length: "14",
+                        prefixes: "300,301,302,303,304,305",
+                        checkdigit: true
+                    };
+                    cards[4] = {
+                        name: "AmEx",
+                        length: "15",
+                        prefixes: "34,37",
+                        checkdigit: true
+                    };
+                    cards[5] = {
+                        name: "Discover",
+                        length: "16",
+                        prefixes: "6011,622,64,65",
+                        checkdigit: true
+                    };
+                    cards[6] = {
+                        name: "JCB",
+                        length: "16",
+                        prefixes: "35",
+                        checkdigit: true
+                    };
+                    cards[7] = {
+                        name: "enRoute",
+                        length: "15",
+                        prefixes: "2014,2149",
+                        checkdigit: true
+                    };
+                    cards[8] = {
+                        name: "Solo",
+                        length: "16,18,19",
+                        prefixes: "6334,6767",
+                        checkdigit: true
+                    };
+                    cards[9] = {
+                        name: "Switch",
+                        length: "16,18,19",
+                        prefixes: "4903,4905,4911,4936,564182,633110,6333,6759",
+                        checkdigit: true
+                    };
+                    cards[10] = {
+                        name: "Maestro",
+                        length: "12,13,14,15,16,18,19",
+                        prefixes: "5018,5020,5038,6304,6759,6761,6762,6763",
+                        checkdigit: true
+                    };
+                    cards[11] = {
+                        name: "VisaElectron",
+                        length: "16",
+                        prefixes: "4026,417500,4508,4844,4913,4917",
+                        checkdigit: true
+                    };
+                    cards[12] = {
+                        name: "LaserCard",
+                        length: "16,17,18,19",
+                        prefixes: "6304,6706,6771,6709",
+                        checkdigit: true
+                    };
+
+                    // Establish card type
+                    var cardType = -1;
+                    for (var i = 0; i < cards.length; i++) {
+
+                        // See if it is this card (ignoring the case of the string)
+                        if (cardname.toLowerCase() == cards[i].name.toLowerCase()) {
+                            cardType = i;
+                            break;
+                        }
+                    }
+
+                    // If card type not found, report an error
+                    if (cardType == -1) {
+                        ccErrorNo = 0;
+                        return false;
+                    }
+
+                    // Ensure that the user has provided a credit card number
+                    if (cardnumber.length == 0) {
+                        ccErrorNo = 1;
+                        return false;
+                    }
+
+                    // Now remove any spaces from the credit card number
+                    cardnumber = cardnumber.replace(/\s/g, "");
+
+                    // Check that the number is numeric
+                    var cardNo = cardnumber
+                    var cardexp = /^[0-9]{13,19}$/;
+                    if (!cardexp.exec(cardNo)) {
+                        ccErrorNo = 2;
+                        return false;
+                    }
+
+                    // Now check the modulus 10 check digit - if required
+                    if (cards[cardType].checkdigit) {
+                        var checksum = 0;                                  // running checksum total
+                        var mychar = "";                                   // next char to process
+                        var j = 1;                                         // takes value of 1 or 2
+
+                        // Process each digit one by one starting at the right
+                        var calc;
+                        for (i = cardNo.length - 1; i >= 0; i--) {
+
+                            // Extract the next digit and multiply by 1 or 2 on alternative digits.
+                            calc = Number(cardNo.charAt(i)) * j;
+
+                            // If the result is in two digits add 1 to the checksum total
+                            if (calc > 9) {
+                                checksum = checksum + 1;
+                                calc = calc - 10;
+                            }
+
+                            // Add the units element to the checksum total
+                            checksum = checksum + calc;
+
+                            // Switch the value of j
+                            if (j == 1) { j = 2 } else { j = 1 };
+                        }
+
+                        // All done - if checksum is divisible by 10, it is a valid modulus 10.
+                        // If not, report an error.
+                        if (checksum % 10 != 0) {
+                            ccErrorNo = 3;
+                            return false;
+                        }
+                    }
+
+                    // Check it's not a spam number
+                    if (cardNo == '5490997771092064') {
+                        ccErrorNo = 5;
+                        return false;
+                    }
+
+                    // The following are the card-specific checks we undertake.
+                    var LengthValid = false;
+                    var PrefixValid = false;
+                    var undefined;
+
+                    // We use these for holding the valid lengths and prefixes of a card type
+                    var prefix = new Array();
+                    var lengths = new Array();
+
+                    // Load an array with the valid prefixes for this card
+                    prefix = cards[cardType].prefixes.split(",");
+
+                    // Now see if any of them match what we have in the card number
+                    for (i = 0; i < prefix.length; i++) {
+                        var exp = new RegExp("^" + prefix[i]);
+                        if (exp.test(cardNo)) PrefixValid = true;
+                    }
+
+                    // If it isn't a valid prefix there's no point at looking at the length
+                    if (!PrefixValid) {
+                        ccErrorNo = 3;
+                        return false;
+                    }
+
+                    // See if the length is valid for this card
+                    lengths = cards[cardType].length.split(",");
+                    for (j = 0; j < lengths.length; j++) {
+                        if (cardNo.length == lengths[j]) LengthValid = true;
+                    }
+
+                    // See if all is OK by seeing if the length was valid. We only check the length if all else was
+                    // hunky dory.
+                    if (!LengthValid) {
+                        ccErrorNo = 4;
+                        return false;
+                    };
+
+                    // The credit card is in the required format.
+                    return true;
+                }
+
+</script>
+        }

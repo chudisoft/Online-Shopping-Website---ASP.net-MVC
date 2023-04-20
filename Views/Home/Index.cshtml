@@ -1,0 +1,203 @@
+﻿@model IEnumerable<Online_Shopping_Website.Models.Product>
+
+@{
+    ViewBag.Title = "Store";
+}
+
+<div class="jumbotron">
+    <h1>ASP.NET</h1>
+    <p class="lead">Welcome to our online shop where you can select and add products to cart and then proceed to place order.</p>
+    <p><a href="/Orders/Checkout" class="btn btn-primary btn-lg">Check Out &raquo;</a></p>
+</div>
+
+<button class="btn btn-primary"
+        style="color: #ffffff; float: right"
+        onclick="AddToCart(this)">
+    <i class="fas fa-cart-shopping"></i> Checkout
+</button>
+<div class="row">
+    @{ int i = 0;}
+    @foreach (var item in Model)
+    {
+        <div class="col-md-3 table-bordered" style="margin: 5px">
+            <div class="form-group h3">
+                @Html.DisplayFor(modelItem => item.Name)
+                @*<button class="btn btn-sm btn-primary"
+                            style="color: #ffffff; float: right"
+                            onclick="AddToCart(@item.Id, this)">
+                        <i class="fa fa-plus glyphicon-plus"></i>
+                    </button>*@
+            </div>
+            <div class="form-group">
+                <img src="@item.FilePath.Substring(item.FilePath.IndexOf("~") + 1)"
+                     class="img-rounded img-thumbnail" style="max-width: 100%" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Category:</label>
+                @Html.DisplayFor(modelItem => item.Category.Name)
+            </div>
+            <div class="form-group">
+                <label class="control-label">Qty Available:</label>
+                @Html.DisplayFor(modelItem => item.Quantity_Available)
+            </div>
+            <div class="form-group">
+                <label class="control-label">Expiry Date:</label>
+                @item.ExpiryDate.ToShortDateString()
+            </div>
+            <div class="form-group text-center">
+                <div>
+                    <label class="control-label">Qty:</label>
+                </div>
+                <button class="btn btn-sm btn-primary"
+                        style="color: #ffffff;"
+                        onclick="SubtractQty(@i, this)">
+                    <i class="fa fa-minus glyphicon-minus"></i>
+                </button>
+                @{
+                    int qty = 0;
+                    var order = (Online_Shopping_Website.Models.Order)ViewBag.order;
+                    if (((List < Online_Shopping_Website.Models.OrderHistory>)ViewBag.cartItems).Count() > 0)
+                    {
+                        var h = ((List<Online_Shopping_Website.Models.OrderHistory>)ViewBag.cartItems).FirstOrDefault(x => x.ProductId == item.Id);
+                        if (h != null)
+                        {
+                            qty = h.Quantity;
+                        }
+                    }
+                }
+                <input type="number" value="@qty" class="form-control-sm"
+                        id="Qty @i" d-val="@item.Id"
+                        onchange="CheckQty(@i, this, @item.Quantity_Available)" />
+                <button class="btn btn-sm btn-primary"
+                        style="color: #ffffff;"
+                        onclick="AddQty(@i, this, @item.Quantity_Available)">
+                    <i class="fa fa-plus glyphicon-plus"></i>
+                </button>
+            </div>
+        </div>
+        i = i+1;
+    }
+
+</div>
+<button class="btn btn-primary"
+        style="color: #ffffff; float: right"
+        onclick="AddToCart(this)">
+    <i class="fas fa-cart-shopping"></i> Checkout
+</button>
+
+@section Scripts{
+    <script>
+        var itemCount = @Model.Count();
+
+        function AddQty(id, btn, qty_av) {
+            var el = document.getElementById("Qty " + id);
+            if (Number(el.value) + 1 <= qty_av)
+                el.value = Number(el.value) + 1;
+        }
+        function CheckQty(id, btn, qty_av) {
+            var el = document.getElementById("Qty " + id);
+            if (Number(el.value) > qty_av)
+                el.value = Number(qty_av);
+        }
+        function SubtractQty(id, btn) {
+            var el = document.getElementById("Qty " + id);
+            if (Number(el.value) - 1 >= 0)
+                el.value = Number(el.value) - 1;
+        }
+        function AddToCart(e) {
+            //fetch()
+            console.log(itemCount)
+            console.log(e.children[0])
+            console.log(e.children[0].className)
+
+            if (e.className === "btn btn-sm btn-primary") {
+                e.className = "btn btn-sm btn-warning";
+            } else {
+                e.className = "btn btn-sm btn-primary";
+            }
+
+            //async () => {
+            //try {
+                var body = [];
+                for (var i = 0; i < itemCount; i++) {
+                    var el = document.getElementById("Qty " + i);
+                    console.log(el)
+                    if (Number(el.value) > 0)
+                        body.push({
+                            "id": el.getAttribute("d-val"),
+                            "qty": Number(el.value)
+                        });
+
+                }
+                console.log(body);
+
+                fetch("@Url.Action("AddToCart")", {
+                    method: "post",
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                }).then((response) => {
+                    // if(response.status === 200){
+                    if (response.redirected === true) {
+                        alert("Unautorized");
+                        window.location.href = "/Account/Login";
+                        return;
+                    }
+                    console.log(response);
+                    response.json().then((result) => {
+                        if (response.status >= 400 && response.status < 500) {
+                            console.log(result)
+                            if (response.status === 401 || response.status === 403) {
+                                sessionStorage.setItem("redirectUrl", window.location.href);
+                                window.location.href = "/Account/Login";
+                                return;
+                            }
+                            return result;
+                        } else if (response.status >= 200 && response.status < 400) {
+                            if (result['status'] === "unauthorized") {
+                                alert(result['status']);
+                                window.location.href = "/Account/Login";
+                            } else if (result['status'] === "success") {
+                                window.location.href = "/Orders/Checkout";
+                            } else {
+                                alert(result['status']);
+                            }
+                        } else {
+                            return {
+                                "error": 'Invalid Request: ' + response.statusText,
+                                "code": response.status,
+                                "status": response.statusText
+                            };
+                        }
+                    })
+                }).catch((error) => {
+                    var errM = error.toString().replace("TypeError: ", "")
+                    alert("Error: " + errM);
+                    return {
+                        "error": errM,
+                        "code": 0,
+                        "status": errM
+                    };
+                })
+
+            return;
+
+                $.ajax({
+                    url: "@Url.Action("AddToCart")",
+                    type: "POST",
+                    data: JSON.stringify(body),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    error: function (response) {
+                        alert("Error: " + response.responseText);
+                },
+                    success: function (response) {
+                        alert(response);
+                    }
+                });
+            //}
+        }
+    </script>
+}
